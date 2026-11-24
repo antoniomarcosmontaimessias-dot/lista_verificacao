@@ -439,7 +439,7 @@
         <div><label class="lbl" for="m-uni">Unidade</label><input id="m-uni" class="inp" x-model="meta.unidade"></div>
         <div><label class="lbl" for="m-cid">Cidade (fechamento do PDF)</label><input id="m-cid" class="inp" x-model="meta.cidade"></div>
         <div class="sm:col-span-2">
-          <p class="lbl" x-text="'Base legal exibida no PDF ('+(rotasV[ident.rota].fam==='osc'?'Lei 13.019/2014':'Lei 14.133/2021')+') · links do SEI da regional Marília'"></p>
+          <p class="lbl" x-text="'Base legal (Lei Federal nº '+(rotasV[ident.rota].fam==='osc'?'13.019/2014':'14.133/2021')+')'"></p>
           <ul class="space-y-3">
             <template x-for="(l,i) in leisAtivas()" :key="i">
               <li class="grid sm:grid-cols-[1fr_1.4fr_auto_auto] gap-2 items-end">
@@ -450,7 +450,10 @@
               </li>
             </template>
           </ul>
-          <button type="button" class="btn-s mt-3" @click="leisAtivas().push({t:'',url:''})">+ Adicionar norma</button>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <button type="button" class="btn-s" @click="leisAtivas().push({t:'',url:''})">+ Adicionar norma</button>
+            <button type="button" class="btn-s" @click="restaurarLeis()" :aria-label="'Restaurar os links padrão da base legal (Lei Federal nº '+(rotasV[ident.rota].fam==='osc'?'13.019/2014':'14.133/2021')+')'">↺ Restaurar</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1045,6 +1048,7 @@ function cnpjValid(v){const d=(v||'').replace(/\D/g,'');if(d.length!==14||/^(\d)
  return calc(12)===+d[12]&&calc(13)===+d[13]}
 function download(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
 function defaultIdent(){return{rota:'osc',processo:'',secretaria:'',tipo:'fomento',route:'cham',origem_mod:'',origem_num:'',osc:'',cnpj:'',valor:'',objeto:'',vigencia:'',gestor:'',data:new Date().toISOString().slice(0,10),fonte:'',emenda:{tipo:'',num:'',valor:'',autor:''}}}
+const LINK_7055='https://cidades.sei.sp.gov.br/marilia/sei/modulos/pesquisa/md_pesq_documento_consulta_externa.php?dJVLRE4Td3_RxMXEsr-kkyemzMdZpUdwVn3lUsRMNixGDsNCMdQJpkGbzom-L_Jkey0vMztuG4hqeyEqcYuzecHHB8pQaQ2LEm0eAOJ8p2YCfOGmJ68haKrZpV-zKlS0dTevO4-HcaGNMH3rEM3WlQ,,';
 function leisPadrao(){return{
  osc:[
   {t:'Lei Federal nº 13.019, de 31 de julho de 2014',url:'https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2014/lei/l13019compilado.htm'},
@@ -1054,7 +1058,7 @@ function leisPadrao(){return{
   {t:'Decreto nº 7.531/2026 (0200769)',url:'https://cidades.sei.sp.gov.br/marilia/sei/modulos/pesquisa/md_pesq_processo_exibir.php?rTuJ1Bdsrmq4nxUq9mDwGLoMfr4jT4WFPgytQKVkj2lEiXXsTY3uRvvFKNmNjaAJSVC_VAdAVMl5h8qzdNBI6IWiOL58DF4up0iPVpFQM5Apcw22MBw_3-Zew6EdF1jWq_TmlzWnMvzALBM2joBC9w,,'}],
  conv:[
   {t:'Lei Federal nº 14.133, de 1º de abril de 2021',url:'https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2021/lei/l14133.htm'},
-  {t:'Decreto Municipal nº 7.055/2023',url:''},
+  {t:'Decreto nº 7.055/2023',url:LINK_7055},
   {t:'Decreto nº 7.531, de 3 de agosto de 2026 (0200769)',url:'https://cidades.sei.sp.gov.br/marilia/sei/modulos/pesquisa/md_pesq_processo_exibir.php?rTuJ1Bdsrmq4nxUq9mDwGLoMfr4jT4WFPgytQKVkj2lEiXXsTY3uRvvFKNmNjaAJSVC_VAdAVMl5h8qzdNBI6IWiOL58DF4up0iPVpFQM5Apcw22MBw_3-Zew6EdF1jWq_TmlzWnMvzALBM2joBC9w,,'}]}}
 function defaultMeta(){return{municipio:'Prefeitura Municipal da Estância Turística de Paraguaçu Paulista – SP',unidade:'Assessoria em Gestão de Convênios e Projetos',cidade:'Paraguaçu Paulista',leis:leisPadrao()}}
 function fieldInit(it){const f={};(it.fields||[]).forEach(d=>{if(d.type==='validade'){f[d.k+'_t']='';f[d.k+'_d']=''}else f[d.k]=''});return f}
@@ -1207,6 +1211,8 @@ function app(){return{
  toast(m){const t={id:uid(),m};this.toasts.push(t);setTimeout(()=>this.toasts=this.toasts.filter(x=>x.id!==t.id),4200)},
  selecao(){return SEL[ROTAS_V[this.ident.rota].fam]},
  leisAtivas(){const f=ROTAS_V[this.ident.rota].fam;if(!this.meta.leis||Array.isArray(this.meta.leis))this.meta.leis=leisPadrao();if(!this.meta.leis[f])this.meta.leis[f]=leisPadrao()[f];return this.meta.leis[f]},
+ restaurarLeis(){const f=ROTAS_V[this.ident.rota].fam;if(!confirm('Restaurar as normas e links padrão da base legal (Lei Federal nº '+(f==='osc'?'13.019/2014':'14.133/2021')+')? Alterações e normas adicionadas nesta lista serão substituídas.'))return;
+  if(!this.meta.leis||Array.isArray(this.meta.leis))this.meta.leis=leisPadrao();this.meta.leis[f]=JSON.parse(JSON.stringify(leisPadrao()[f]));this.toast('Base legal restaurada ao padrão.')},
  emendaKind(){return {'Emenda Municipal':'m','Emenda Estadual':'e','Emenda Federal':'f'}[this.ident.fonte]||''},
  fonteText(){const i=this.ident;if(!i.fonte)return '—';const e=i.emenda,k=this.emendaKind();if(!k)return i.fonte;
   return i.fonte+' — '+[k!=='m'&&e.tipo?'Tipo: '+e.tipo:'',e.num?'Nº '+e.num:'',e.valor?'R$ '+e.valor:'',e.autor?'Autor: '+e.autor:''].filter(Boolean).join(' · ')},
@@ -1289,7 +1295,7 @@ function app(){return{
  schedule(){clearTimeout(this.timer);this.timer=setTimeout(()=>{try{localStorage.setItem(STORE.draft,JSON.stringify(this.snap(false)));this.savedAt=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}catch(e){this.toast('Não foi possível salvar o rascunho (armazenamento cheio).')}},1000);
   clearTimeout(this.syncTimer);this.syncTimer=setTimeout(()=>{const s=this.sig();if(s===this.lastSig)return;this.lastSig=s;this.sendSnap()},500)},
  normIdent(src){const di=Object.assign(defaultIdent(),src||{});di.emenda=Object.assign({tipo:'',num:'',valor:'',autor:''},(src&&src.emenda)||{});return di},
- normLeis(l){const d=leisPadrao();if(Array.isArray(l))return{osc:l,conv:d.conv};if(l&&typeof l==='object')return{osc:Array.isArray(l.osc)?l.osc:d.osc,conv:Array.isArray(l.conv)?l.conv:d.conv};return d},
+ normLeis(l){const d=leisPadrao();const mg=a=>(Array.isArray(a)?a:[]).map(x=>(x&&/^Decreto Municipal nº 7\.055\/2023$/.test((x.t||'').trim()))?{t:'Decreto nº 7.055/2023',url:x.url||LINK_7055}:x);if(l&&!Array.isArray(l)&&Array.isArray(l.conv))l={...l,conv:mg(l.conv)};if(Array.isArray(l))return{osc:l,conv:d.conv};if(l&&typeof l==='object')return{osc:Array.isArray(l.osc)?l.osc:d.osc,conv:Array.isArray(l.conv)?l.conv:d.conv};return d},
  normAudit(a){return Object.assign({kind:'pdf',origem:'osc',docKey:'',gen:{},tflags:[],flags:[],cnpjs:[],label:'',validade:'',nat:'',ocr:false,target:'',applied:false,pages:0,size:0},a)},
  hasProgress(d){return Object.keys(d.st||{}).some(id=>{const s=d.st[id],it=ITEM[id];return s&&it&&(s.s!==(it.df||'p')||s.obs||s.sei||(s.subs||[]).some(Boolean))})},
  applySnap(d,silent){
